@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run Bhavesh Run</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', sans-serif;
+            overflow: hidden;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(to bottom, #87CEEB, #90EE90);
+            border: 3px solid #333;
+            border-radius: 10px;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: flex-end; 
+            color: white;
+            font-size: 28px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .ui-item {
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        
+        /* --- START SCREEN STYLES --- */
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            border-radius: 10px;
+        }
+
+        #startScreen h1 {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: #4CAF50;
+            text-shadow: 4px 4px 8px rgba(0, 255, 0, 0.5);
+        }
+
+        #startScreen p {
+            font-size: 24px;
+            margin-bottom: 40px;
+            color: #ccc;
+        }
+        
+        #startScreen button {
+            font-size: 32px;
+            padding: 20px 60px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            background: linear-gradient(to bottom, #FFD700, #FFA500);
+            color: #404040;
+            font-weight: bold;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+            transition: transform 0.2s;
+        }
+
+        #startScreen button:hover {
+            transform: scale(1.05);
+        }
+        /* ------------------------------- */
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+            border: 3px solid #FFD700;
+        }
+        
+        #gameOver h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #FFD700;
+        }
+        
+        #gameOver button {
+            font-size: 24px;
+            padding: 15px 40px;
+            margin: 10px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: linear-gradient(to bottom, #4CAF50, #388E3C);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        
+        #gameOver button:hover {
+            transform: scale(1.05);
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 16px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 850px) {
+            #gameContainer {
+                width: 100vw;
+                height: 100vh;
+            }
+            #gameCanvas {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        
+        <div id="startScreen">
+            <h1>Run Bhavesh Run</h1>
+            <p> 😎This game is developed by Bhavesh Singh using HTML code!</p>
+            <button onclick="startGame()">👊 Tap to Play</button>
+            <p style="margin-top: 40px; font-size: 18px; color: #888;">
+                Controls: ← → / A D keys or Swipe/Click on Road
+            </p>
+        </div>
+        
+        <div id="ui">
+            <div class="ui-item">Coins: <span id="score">0</span> / 20</div>
+        </div>
+        
+        <div id="instructions">
+             This game is fully devoped by Bhavesh singh 😎 From Agra 🕌
+          
+        </div>
+        
+        <div id="gameOver">
+            <h1 id="resultText">Game Over!</h1>
+            <p id="finalScore" style="font-size: 28px; margin: 20px 0;"></p>
+            <p style="font-size: 18px; color: #FFD700; margin: 10px 0;">
+                Final Unit Count: <span id="finalUnits"></span>
+            </p>
+            <button onclick="restartGame()">💀
+              Play Next</button>
+        </div>
+        
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // --- GAME CONSTANTS ---
+        const COIN_GOAL = 20; 
+        const BASE_SPEED = 5; 
+        
+        // Road configuration
+        const ROAD = {
+            width: 350,
+            get left() { return (canvas.width - this.width) / 2; },
+            get right() { return this.left + this.width; },
+            get center() { return canvas.width / 2; }
+        };
+        
+        // Game state
+        let gameState = {
+            unitCount: 10,
+            score: 0,
+            playerX: ROAD.center,
+            playerY: canvas.height - 150,
+            targetX: ROAD.center,
+            speed: BASE_SPEED,
+            gameRunning: false,
+            obstacles: [],
+            gates: [],
+            enemies: [],
+            coins: [],
+            particles: [],
+            distance: 0,
+            roadOffset: 0
+        };
+        
+        // --- SOUND SETUP ---
+        // NOTE: This uses a placeholder public domain sound effect URL. 
+        // For a permanent solution, you would host your own sound file (e.g., 'coin.mp3').
+        const coinSound = new Audio('https://cdn.jsdelivr.net/gh/Tonejs/Tone.js@4.0.1/examples/audio/casio/A1.mp3');
+        coinSound.volume = 0.5;
+
+        function playCoinSound() {
+            // Cloning the node ensures the sound can be played multiple times quickly without waiting for the previous one to finish.
+            const soundClone = coinSound.cloneNode();
+            soundClone.play().catch(e => console.log("Audio playback failed:", e));
+        }
+        // -------------------
+
+        // Input handling (omitted for brevity, remains the same)
+        let keys = {};
+        let touchStartX = 0;
+        let mouseX = null;
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+        
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const touchX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+            
+            if(touchX >= ROAD.left && touchX <= ROAD.right) {
+                gameState.targetX = touchX;
+            }
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+        });
+        
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            
+            if(clickX >= ROAD.left && clickX <= ROAD.right) {
+                gameState.targetX = clickX;
+            }
+        });
+        
+        // Game objects (omitted for brevity, remains the same)
+        class Gate {
+            constructor(y, operation, value) {
+                this.y = y;
+                this.width = 80;
+                this.height = 100;
+                this.operation = operation;
+                this.value = value;
+                this.color = this.getColor();
+                this.lane = Math.floor(Math.random() * 3);
+                this.x = this.getLaneX();
+            }
+            getLaneX() {
+                const laneWidth = ROAD.width / 3;
+                return ROAD.left + (this.lane * laneWidth) + (laneWidth - this.width) / 2;
+            }
+            getColor() {
+                switch(this.operation) {
+                    case '+': return '#4CAF50';
+                    case '-': return '#F44336';
+                    case '×': return '#2196F3';
+                    case '÷': return '#FF9800';
+                    default: return '#9E9E9E';
+                }
+            }
+            draw() {
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(this.x - 8, this.y, 8, this.height);
+                ctx.fillRect(this.x + this.width, this.y, 8, this.height);
+                const gradient = ctx.createLinearGradient(this.x, this.y, this.x, this.y + 50);
+                gradient.addColorStop(0, this.color);
+                gradient.addColorStop(1, this.adjustColor(this.color, -30));
+                ctx.fillStyle = gradient;
+                ctx.fillRect(this.x, this.y, this.width, 50);
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(this.x, this.y, this.width, 50);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 4;
+                ctx.fillText(`${this.operation}${this.value}`, this.x + this.width/2, this.y + 35);
+                ctx.shadowBlur = 0;
+            }
+            adjustColor(color, amount) {
+                const num = parseInt(color.replace('#',''), 16);
+                const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+                const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amount));
+                const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount));
+                return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+            }
+            update() {
+                this.y += gameState.speed;
+            }
+        }
+        
+        class Obstacle {
+            constructor(y) {
+                this.y = y;
+                this.width = 70;
+                this.height = 50;
+                this.lane = Math.floor(Math.random() * 3);
+                this.x = this.getLaneX();
+            }
+            getLaneX() {
+                const laneWidth = ROAD.width / 3;
+                return ROAD.left + (this.lane * laneWidth) + (laneWidth - this.width) / 2;
+            }
+            draw() {
+                ctx.fillStyle = '#D32F2F';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.fillStyle = '#F44336';
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x + 10, this.y - 10);
+                ctx.lineTo(this.x + this.width + 10, this.y - 10);
+                ctx.lineTo(this.x + this.width, this.y);
+                ctx.fill();
+                ctx.fillStyle = '#FFEB3B';
+                for(let i = 0; i < this.width; i += 15) {
+                    ctx.fillRect(this.x + i, this.y + 5, 8, this.height - 10);
+                }
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 28px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('⚠', this.x + this.width/2, this.y + this.height/2 + 10);
+            }
+            update() {
+                this.y += gameState.speed;
+            }
+        }
+        
+        class Enemy {
+            constructor(y) {
+                this.y = y;
+                this.count = Math.floor(Math.random() * Math.max(5, gameState.unitCount * 0.6)) + 3;
+                this.width = 70;
+                this.height = 70;
+                this.lane = Math.floor(Math.random() * 3);
+                this.x = this.getLaneX();
+            }
+            getLaneX() {
+                const laneWidth = ROAD.width / 3;
+                return ROAD.left + (this.lane * laneWidth) + (laneWidth - this.width) / 2;
+            }
+            draw() {
+                const gradient = ctx.createRadialGradient(
+                    this.x + this.width/2, this.y + this.height/2, 0,
+                    this.x + this.width/2, this.y + this.height/2, 35
+                );
+                gradient.addColorStop(0, '#E91E63');
+                gradient.addColorStop(1, '#C2185B');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x + this.width/2, this.y + this.height/2, 35, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 22px Arial';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 4;
+                ctx.fillText(this.count, this.x + this.width/2, this.y + this.height/2 + 8);
+                ctx.shadowBlur = 0;
+            }
+            update() {
+                this.y += gameState.speed;
+            }
+        }
+        
+        class Coin {
+            constructor(y) {
+                this.y = y;
+                this.width = 30;
+                this.height = 30;
+                this.lane = Math.floor(Math.random() * 3);
+                this.x = this.getLaneX();
+                this.rotation = 0;
+                this.value = Math.floor(Math.random() * 3) + 1;
+            }
+            getLaneX() {
+                const laneWidth = ROAD.width / 3;
+                return ROAD.left + (this.lane * laneWidth) + (laneWidth - this.width) / 2;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                ctx.rotate(this.rotation);
+                const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 15);
+                gradient.addColorStop(0, '#FFD700');
+                gradient.addColorStop(0.5, '#FFA500');
+                gradient.addColorStop(1, '#FF8C00');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, 15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#B8860B';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#8B4513';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.value, 0, 5);
+                ctx.restore();
+                this.rotation += 0.1;
+            }
+            update() {
+                this.y += gameState.speed;
+            }
+        }
+        
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 6;
+                this.vy = (Math.random() - 0.5) * 6 - 2;
+                this.life = 40;
+                this.maxLife = 40;
+                this.color = color;
+                this.size = Math.random() * 4 + 2;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.life / this.maxLife;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.2; // Gravity
+                this.life--;
+            }
+        }
+        
+        // Draw road (omitted for brevity, remains the same)
+        function drawRoad() {
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(0, 0, ROAD.left, canvas.height);
+            ctx.fillRect(ROAD.right, 0, canvas.width - ROAD.right, canvas.height);
+            ctx.fillStyle = '#404040';
+            ctx.fillRect(ROAD.left, 0, ROAD.width, canvas.height);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(ROAD.left - 5, 0, 5, canvas.height);
+            ctx.fillRect(ROAD.right, 0, 5, canvas.height);
+            ctx.strokeStyle = '#FFFF00';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([20, 20]);
+            ctx.lineDashOffset = -gameState.roadOffset;
+            const laneWidth = ROAD.width / 3;
+            ctx.beginPath();
+            ctx.moveTo(ROAD.left + laneWidth, 0);
+            ctx.lineTo(ROAD.left + laneWidth, canvas.height);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(ROAD.left + laneWidth * 2, 0);
+            ctx.lineTo(ROAD.left + laneWidth * 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            gameState.roadOffset += gameState.speed;
+            if(gameState.roadOffset > 40) gameState.roadOffset = 0;
+        }
+        
+        // Draw player (omitted for brevity, remains the same)
+        function drawPlayer() {
+            const MAX_GROUP_WIDTH = ROAD.width - 40; 
+            const maxUnitsPerSide = 25; 
+            const unitsPerSide = Math.min(maxUnitsPerSide, Math.ceil(Math.sqrt(gameState.unitCount)));
+            
+            let spacing;
+            if (unitsPerSide > 1) {
+                spacing = Math.min(15, MAX_GROUP_WIDTH / (unitsPerSide - 1));
+            } else {
+                spacing = 0;
+            }
+
+            const groupWidth = (unitsPerSide - 1) * spacing;
+            const startX = gameState.playerX - groupWidth / 2;
+            
+            const unitRadius = 5;
+            const unitHeight = 10;
+            const unitTotalHeight = unitRadius * 2 + unitHeight;
+
+            ctx.fillStyle = '#2196F3';
+            ctx.strokeStyle = '#1976D2';
+            ctx.lineWidth = 2;
+            
+            let drawn = 0;
+            for(let row = 0; row < unitsPerSide && drawn < gameState.unitCount; row++) {
+                for(let col = 0; col < unitsPerSide && drawn < gameState.unitCount; col++) {
+                    const x = startX + col * spacing;
+                    const y = gameState.playerY - row * spacing;
+                    
+                    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                    ctx.beginPath();
+                    ctx.ellipse(x, y + unitHeight + unitRadius, unitRadius, 2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#2196F3';
+                    ctx.beginPath();
+                    ctx.arc(x, y - unitRadius, unitRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    ctx.fillRect(x - 2, y, 4, unitHeight);
+                    
+                    drawn++;
+                }
+            }
+            
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 4;
+            ctx.font = 'bold 32px Arial';
+            ctx.textAlign = 'center';
+            ctx.strokeText(gameState.unitCount, gameState.playerX, gameState.playerY - 60);
+            ctx.fillText(gameState.unitCount, gameState.playerX, gameState.playerY - 60);
+
+            const playerCenterY = gameState.playerY;
+            const playerHitboxWidth = groupWidth + unitRadius * 2;
+            const playerHitboxHeight = (unitsPerSide - 1) * spacing + unitTotalHeight;
+
+            return {
+                x: gameState.playerX - playerHitboxWidth / 2,
+                y: playerCenterY - playerHitboxHeight + 20, 
+                w: playerHitboxWidth,
+                h: playerHitboxHeight
+            };
+        }
+        
+        // Spawn functions (omitted for brevity, remains the same)
+        function spawnGate() {
+            const operations = [
+                {op: '+', val: Math.floor(Math.random() * 15) + 5},
+                {op: '-', val: Math.floor(Math.random() * 8) + 3},
+                {op: '×', val: 2},
+                {op: '÷', val: 2}
+            ];
+            const choice = operations[Math.floor(Math.random() * operations.length)];
+            gameState.gates.push(new Gate(-100, choice.op, choice.val));
+        }
+        
+        function spawnObstacle() {
+            gameState.obstacles.push(new Obstacle(-50));
+        }
+        
+        function spawnEnemy() {
+            gameState.enemies.push(new Enemy(-70));
+        }
+        
+        function spawnCoin() {
+            gameState.coins.push(new Coin(-30));
+        }
+        
+        // Collision functions (omitted for brevity, remains the same)
+        function checkCollision(x1, y1, w1, h1, x2, y2, w2, h2) {
+            return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+        }
+        
+        function createParticles(x, y, color, count = 20) {
+            for(let i = 0; i < count; i++) {
+                gameState.particles.push(new Particle(x, y, color));
+            }
+        }
+        
+        function handleGate(gate) {
+            let newCount = gameState.unitCount;
+            switch(gate.operation) {
+                case '+': newCount += gate.value; break;
+                case '-': newCount -= gate.value; break;
+                case '×': newCount *= gate.value; break;
+                case '÷': newCount = Math.floor(newCount / gate.value); break;
+            }
+            gameState.unitCount = Math.max(1, newCount); 
+            createParticles(gate.x + gate.width/2, gate.y + gate.height/2, gate.color, 25);
+        }
+        
+        function handleObstacle() {
+            const loss = Math.min(5, gameState.unitCount);
+            gameState.unitCount -= loss;
+            gameState.unitCount = Math.max(0, gameState.unitCount);
+            createParticles(gameState.playerX, gameState.playerY, '#F44336', 20);
+        }
+        
+        function handleEnemy(enemy) {
+            if(gameState.unitCount > enemy.count) {
+                gameState.unitCount -= enemy.count;
+                createParticles(enemy.x + enemy.width/2, enemy.y + enemy.height/2, '#4CAF50', 30);
+            } else {
+                const loss = Math.floor(gameState.unitCount * 0.5);
+                gameState.unitCount -= Math.max(1, loss);
+                gameState.unitCount = Math.max(0, gameState.unitCount);
+                createParticles(gameState.playerX, gameState.playerY, '#F44336', 25);
+            }
+        }
+        
+        function handleCoin(coin) {
+            gameState.score += coin.value;
+            // --- NEW: Play sound effect when coin is collected ---
+            playCoinSound(); 
+            // ---------------------------------------------------
+            createParticles(coin.x + coin.width/2, coin.y + coin.height/2, '#FFD700', 15);
+        }
+        
+        // Game loop (omitted for brevity, remains the same)
+        let spawnTimer = 0;
+        
+        function update() {
+            if(!gameState.gameRunning) return;
+            
+            const moveSpeed = 6;
+            
+            if(keys['ArrowLeft'] || keys['a'] || keys['A']) {
+                gameState.targetX = Math.max(ROAD.left + 40, gameState.targetX - moveSpeed);
+            }
+            if(keys['ArrowRight'] || keys['d'] || keys['D']) {
+                gameState.targetX = Math.min(ROAD.right - 40, gameState.targetX + moveSpeed);
+            }
+            
+            const diff = gameState.targetX - gameState.playerX;
+            gameState.playerX += diff * 0.15;
+            
+            gameState.playerX = Math.max(ROAD.left + 40, Math.min(ROAD.right - 40, gameState.playerX));
+            gameState.targetX = Math.max(ROAD.left + 40, Math.min(ROAD.right - 40, gameState.targetX));
+            
+            const playerHitbox = drawPlayer(true); 
+
+            gameState.gates = gameState.gates.filter(gate => {
+                gate.update();
+                if(checkCollision(playerHitbox.x, playerHitbox.y, playerHitbox.w, playerHitbox.h, gate.x, gate.y, gate.width, gate.height)) {
+                    handleGate(gate);
+                    return false;
+                }
+                return gate.y < canvas.height + 50;
+            });
+            
+            gameState.obstacles = gameState.obstacles.filter(obstacle => {
+                obstacle.update();
+                if(checkCollision(playerHitbox.x, playerHitbox.y, playerHitbox.w, playerHitbox.h, obstacle.x, obstacle.y, obstacle.width, obstacle.height)) {
+                    handleObstacle();
+                    return false;
+                }
+                return obstacle.y < canvas.height + 50;
+            });
+            
+            gameState.enemies = gameState.enemies.filter(enemy => {
+                enemy.update();
+                if(checkCollision(playerHitbox.x, playerHitbox.y, playerHitbox.w, playerHitbox.h, enemy.x, enemy.y, enemy.width, enemy.height)) {
+                    handleEnemy(enemy);
+                    return false;
+                }
+                return enemy.y < canvas.height + 50;
+            });
+            
+            gameState.coins = gameState.coins.filter(coin => {
+                coin.update();
+                if(checkCollision(playerHitbox.x, playerHitbox.y, playerHitbox.w, playerHitbox.h, coin.x, coin.y, coin.width, coin.height)) {
+                    handleCoin(coin);
+                    return false;
+                }
+                return coin.y < canvas.height + 50;
+            });
+            
+            gameState.particles = gameState.particles.filter(particle => {
+                particle.update();
+                return particle.life > 0;
+            });
+            
+            spawnTimer++;
+            if(spawnTimer > 60) {
+                const rand = Math.random();
+                if(rand < 0.3) {
+                    spawnGate();
+                } else if(rand < 0.5) {
+                    spawnObstacle();
+                } else if(rand < 0.7) {
+                    spawnEnemy();
+                } else {
+                    spawnCoin();
+                }
+                spawnTimer = 0;
+            }
+            
+            gameState.distance++;
+            gameState.speed = BASE_SPEED; 
+            
+            if(gameState.unitCount <= 0) {
+                endGame(false);
+            }
+            if(gameState.score >= COIN_GOAL) {
+                 endGame(true);
+            }
+            
+            document.getElementById('score').textContent = gameState.score;
+        }
+        
+        function draw() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(1, '#90EE90');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawRoad();
+            gameState.coins.forEach(coin => coin.draw());
+            gameState.gates.forEach(gate => gate.draw());
+            gameState.obstacles.forEach(obstacle => obstacle.draw());
+            gameState.enemies.forEach(enemy => enemy.draw());
+            gameState.particles.forEach(particle => particle.draw());
+            drawPlayer();
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            if(gameState.gameRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            gameState.gameRunning = true;
+            gameLoop();
+        }
+        
+        function endGame(isVictory) {
+            gameState.gameRunning = false;
+            document.getElementById('gameOver').style.display = 'block';
+
+            if (isVictory) {
+                document.getElementById('resultText').textContent = "🏆 VICTORY! 🏆";
+                document.getElementById('resultText').style.color = "#4CAF50"; 
+                document.getElementById('finalScore').textContent = `Goal Reached: ${gameState.score} Coins`;
+            } else {
+                document.getElementById('resultText').textContent = "Game Over!";
+                document.getElementById('resultText').style.color = "#FFD700"; 
+                document.getElementById('finalScore').textContent = `Coins Collected: ${gameState.score}`;
+            }
+
+            document.getElementById('finalUnits').textContent = gameState.unitCount;
+        }
+        
+        function restartGame() {
+            gameState = {
+                unitCount: 10,
+                score: 0,
+                playerX: ROAD.center,
+                playerY: canvas.height - 150,
+                targetX: ROAD.center,
+                speed: BASE_SPEED,
+                gameRunning: true, 
+                obstacles: [],
+                gates: [],
+                enemies: [],
+                coins: [],
+                particles: [],
+                distance: 0,
+                roadOffset: 0
+            };
+            
+            spawnTimer = 0;
+            document.getElementById('gameOver').style.display = 'none';
+            gameLoop();
+        }
+        
+        function initialDraw() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(1, '#90EE90');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawRoad(); 
+        }
+
+        initialDraw(); 
+    </script>
+</body>
+</html>
+
